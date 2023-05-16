@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
 
@@ -10,13 +10,25 @@ const useFlip = (initialState) => {
   return [state, toggleState];
 };
 
-const useAxios = (url) => {
-  const [state, setState] = useState([]);
-  const addCard = async () => {
-    const response = await axios.get(url);
+const useAxios = (key, url) => {
+  const [state, setState] = useLocalStorage(key);
+  const addCard = async (formatter = (data) => data, restOfUrl = "") => {
+    const response = await axios.get(`${url}${restOfUrl}`);
     setState((state) => [...state, { ...response.data, id: uuid() }]);
   };
-  return [state, addCard];
+  const clearCards = () => setState([]);
+  return [state, addCard, clearCards];
 };
 
-export { useFlip, useAxios };
+function useLocalStorage(key, initialValue = []) {
+  if (localStorage.getItem(key)) {
+    initialValue = JSON.parse(localStorage.getItem(key));
+  }
+  const [value, setValue] = useState(initialValue);
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [value, key]);
+  return [value, setValue];
+}
+
+export { useFlip, useAxios, useLocalStorage };
